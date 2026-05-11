@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Dict, Optional, Tuple
 
 import docker
 
@@ -12,9 +13,9 @@ class Supervisor:
     def __init__(self, config: GatewayConfig) -> None:
         self._config = config
         self._docker = docker.from_env()
-        self._containers: dict[str, str] = {}
+        self._containers: Dict[str, str] = {}
 
-    def spawn(self, task_id: str, worker_id: str, session_id: str | None = None) -> tuple[str, str]:
+    def spawn(self, task_id: str, worker_id: str, session_id: Optional[str] = None) -> Tuple[str, str]:
         workspace_path = Path(self._config.workspace_root) / task_id
         workspace_path.mkdir(parents=True, exist_ok=True)
 
@@ -45,4 +46,3 @@ class Supervisor:
             container.stop(timeout=5)
         except docker.errors.NotFound:
             return
-

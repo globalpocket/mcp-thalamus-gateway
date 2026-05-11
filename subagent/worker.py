@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
-from typing import Any
+from typing import Any, Dict, Optional
 
 from nats.aio.client import Client as NATS
 
@@ -16,7 +16,7 @@ class SubagentWorker:
         self._worker_id = os.getenv("WORKER_ID", "wk-local")
         self._task_id = os.getenv("TASK_ID", "task-local")
         self._session_id = os.getenv("SESSION_ID") or None
-        self._llm_future: asyncio.Future[dict[str, Any]] | None = None
+        self._llm_future: Optional[asyncio.Future[Dict[str, Any]]] = None
 
     async def run(self) -> None:
         await self._nats.connect(self._nats_url)
@@ -76,4 +76,3 @@ class SubagentWorker:
 async def run_worker() -> None:
     worker = SubagentWorker()
     await worker.run()
-

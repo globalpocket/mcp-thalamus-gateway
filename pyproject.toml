@@ -3,7 +3,7 @@ name = "mcp-thalamus-gateway"
 version = "0.1.0"
 description = "MCP gateway and Thalamus subagent runtime bridge"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 dependencies = [
   "nats-py>=2.9.0",
   "pydantic>=2.7.0",
@@ -20,3 +20,8 @@ package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
 include = ["gateway*", "subagent*", "schemas*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = "--cov=gateway --cov=subagent --cov=schemas --cov-report=term-missing"
+testpaths = ["tests"]

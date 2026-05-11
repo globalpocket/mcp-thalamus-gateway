@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import json
-from typing import Any
+from typing import Any, Dict, Optional
 from uuid import uuid4
 
 from nats.aio.client import Client as NATS
@@ -19,7 +18,7 @@ class NatsGateway:
         self._nats = NATS()
         self._llm = LLMBridge(config)
         self._supervisor = Supervisor(config)
-        self._results: dict[str, dict[str, Any]] = {}
+        self._results: Dict[str, Dict[str, Any]] = {}
 
     async def start(self) -> None:
         await self._nats.connect(self._config.nats_url)
@@ -27,7 +26,7 @@ class NatsGateway:
         await self._nats.subscribe("runtime.task.result", cb=self._on_task_result)
         await self._nats.subscribe("runtime.agent.exit", cb=self._on_agent_exit)
 
-    async def assign_task(self, objective: str, session_id: str | None = None) -> dict[str, Any]:
+    async def assign_task(self, objective: str, session_id: Optional[str] = None) -> Dict[str, Any]:
         task_id = f"task-{uuid4().hex[:8]}"
         worker_id = f"wk-{uuid4().hex[:8]}"
         _, workspace = self._supervisor.spawn(task_id=task_id, worker_id=worker_id, session_id=session_id)
@@ -74,4 +73,3 @@ class NatsGateway:
         worker_id = event.scope.worker if event.scope else None
         if worker_id:
             self._supervisor.terminate(worker_id)
-

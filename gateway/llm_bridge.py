@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -11,7 +11,7 @@ class LLMBridge:
     def __init__(self, config: GatewayConfig) -> None:
         self._config = config
 
-    async def infer(self, prompt: str, session: str | None = None) -> dict[str, Any]:
+    async def infer(self, prompt: str, session: Optional[str] = None) -> Dict[str, Any]:
         payload = {
             "model": self._config.llm_model,
             "messages": [{"role": "user", "content": prompt}],
@@ -24,4 +24,3 @@ class LLMBridge:
             )
             response.raise_for_status()
             return response.json()
-
