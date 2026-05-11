@@ -1,34 +1,37 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 from typing import Any, Dict, Optional
 
-from nats.aio.client import Client as NATS
-
+from gateway.bus_adapter import create_nats_bus
 from schemas.events import EventScope, RuntimeEvent, make_event
 
 
 class SubagentWorker:
+    """Thalamus runtime の NatsBus を利用する Subagent 実装。"""
+
     def __init__(self) -> None:
-        self._nats = NATS()
         self._nats_url = os.getenv("NATS_URL", "nats://localhost:4222")
         self._worker_id = os.getenv("WORKER_ID", "wk-local")
         self._task_id = os.getenv("TASK_ID", "task-local")
         self._session_id = os.getenv("SESSION_ID") or None
+        self._bus = create_nats_bus(servers=[self._nats_url])
         self._llm_future: Optional[asyncio.Future[Dict[str, Any]]] = None
 
     async def run(self) -> None:
-        await self._nats.connect(self._nats_url)
-        await self._nats.subscribe("runtime.task.assign", cb=self._on_task_assign)
-        await self._nats.subscribe("runtime.llm.response", cb=self._on_llm_response)
+        await self._bus.connect()
+        await self._bus.subscribe("runtime.task.assign", self._on_task_assign)
+        await self._bus.subscribe("runtime.llm.response", self._on_llm_response)
         await asyncio.Event().wait()
 
     async def _publish(self, event: RuntimeEvent) -> None:
-        await self._nats.publish(event.type, event.model_dump_json().encode())
+        await self._bus.publish(event.type, json.dumps(event.model_dump()).encode())
 
-    async def _on_task_assign(self, msg: Any) -> None:
-        event = RuntimeEvent.model_validate_json(msg.data.decode())
+    async def _on_task_assign(self, subject: str, event_payload: Dict[str, Any]) -> None:
+        _ = subject
+        event = RuntimeEvent.model_validate(event_payload)
         if not event.scope or event.scope.worker != self._worker_id:
             return
 
@@ -63,10 +66,11 @@ class SubagentWorker:
         )
         await self._publish(exit_evt)
 
-    async def _on_llm_response(self, msg: Any) -> None:
+    async def _on_llm_response(self, subject: str, event_payload: Dict[str, Any]) -> None:
+        _ = subject
         if not self._llm_future or self._llm_future.done():
             return
-        event = RuntimeEvent.model_validate_json(msg.data.decode())
+        event = RuntimeEvent.model_validate(event_payload)
         if not event.scope or event.scope.worker != self._worker_id:
             return
         result = event.payload.get("result", {})

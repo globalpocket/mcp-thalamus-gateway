@@ -20,9 +20,12 @@ Thalamusのイベント駆動プロトコルに準拠し、MCPクライアント
 
 ## セットアップ
 
+> 重要: `thalamus` 依存は Python `>=3.10` を要求します。ローカルが `3.9` 系の場合は、以下の Docker 手順を正系として利用してください。
+
 1. 依存インストール
 
 ```bash
+# Python 3.10+ のローカル環境がある場合のみ
 pip install -e .
 ```
 
@@ -37,6 +40,12 @@ docker build -f infra/subagent.Dockerfile -t thalamus-subagent:dev .
 ```bash
 docker compose -f infra/docker-compose.yml up --build
 ```
+
+## Runtime実体利用への移行状況
+
+- `thalamus` 依存は [`pyproject.toml`](pyproject.toml) に追加済み
+- Docker イメージ内では [`infra/gateway.Dockerfile`](infra/gateway.Dockerfile) と [`infra/subagent.Dockerfile`](infra/subagent.Dockerfile) で `pip install git+https://github.com/globalpocket/thalamus.git` を実行
+- runtime API 置換の調査メモは [`docs/runtime-api-notes.md`](docs/runtime-api-notes.md) を参照
 
 ## テスト
 

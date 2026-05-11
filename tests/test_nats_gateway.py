@@ -18,8 +18,8 @@ class _Nats:
         self.subscriptions = {}
         self.connected = None
 
-    async def connect(self, url):
-        self.connected = url
+    async def connect(self):
+        self.connected = True
 
     async def subscribe(self, subject, cb):
         self.subscriptions[subject] = cb
@@ -50,19 +50,19 @@ class _Llm:
 async def test_gateway_start_subscriptions():
     # Gateway起動時に必要なNATS購読（llm.request/task.result/agent.exit）が登録されることを検証する
     gw = NatsGateway(GatewayConfig())
-    gw._nats = _Nats()
+    gw._bus = _Nats()
     await gw.start()
-    assert gw._nats.connected is not None
-    assert "runtime.llm.request" in gw._nats.subscriptions
-    assert "runtime.task.result" in gw._nats.subscriptions
-    assert "runtime.agent.exit" in gw._nats.subscriptions
+    assert gw._bus.connected is True
+    assert "runtime.llm.request" in gw._bus.subscriptions
+    assert "runtime.task.result" in gw._bus.subscriptions
+    assert "runtime.agent.exit" in gw._bus.subscriptions
 
 
 @pytest.mark.asyncio
 async def test_gateway_llm_request_response_publish():
     # runtime.llm.request受信時にLLM推論を実行し、runtime.llm.responseをpublishすることを検証する
     gw = NatsGateway(GatewayConfig())
-    gw._nats = _Nats()
+    gw._bus = _Nats()
     gw._llm = _Llm()
 
     evt = make_event(
@@ -71,9 +71,9 @@ async def test_gateway_llm_request_response_publish():
         payload={"prompt": "hello"},
         scope=EventScope(worker="wk-1", task="task-1", session="s1"),
     )
-    await gw._on_llm_request(_Msg(evt.model_dump_json().encode()))
-    assert len(gw._nats.published) == 1
-    subject, raw = gw._nats.published[0]
+    await gw._on_llm_request("runtime.llm.request", evt.model_dump())
+    assert len(gw._bus.published) == 1
+    subject, raw = gw._bus.published[0]
     assert subject == "runtime.llm.response"
     assert b"runtime.llm.response" in raw
 
@@ -82,7 +82,7 @@ async def test_gateway_llm_request_response_publish():
 async def test_gateway_result_and_exit_handlers():
     # task.resultで結果が保存され、agent.exitでSupervisor.terminateが呼ばれることを検証する
     gw = NatsGateway(GatewayConfig())
-    gw._nats = _Nats()
+    gw._bus = _Nats()
     gw._supervisor = _Sup()
 
     result_evt = make_event(
@@ -91,7 +91,7 @@ async def test_gateway_result_and_exit_handlers():
         payload={"summary": "done"},
         scope=EventScope(worker="wk-1", task="task-1"),
     )
-    await gw._on_task_result(_Msg(result_evt.model_dump_json().encode()))
+    await gw._on_task_result("runtime.task.result", result_evt.model_dump())
     assert gw._results["task-1"]["summary"] == "done"
 
     exit_evt = make_event(
@@ -100,7 +100,7 @@ async def test_gateway_result_and_exit_handlers():
         payload={"reason": "completed"},
         scope=EventScope(worker="wk-1", task="task-1"),
     )
-    await gw._on_agent_exit(_Msg(exit_evt.model_dump_json().encode()))
+    await gw._on_agent_exit("runtime.agent.exit", exit_evt.model_dump())
     assert gw._supervisor.terminated == ["wk-1"]
 
 
@@ -108,7 +108,7 @@ async def test_gateway_result_and_exit_handlers():
 async def test_gateway_assign_task_waits_result(monkeypatch):
     # assign_taskがtask.assign発行後に結果到着まで待機し、workspace_path付きで返すことを検証する
     gw = NatsGateway(GatewayConfig())
-    gw._nats = _Nats()
+    gw._bus = _Nats()
     gw._supervisor = _Sup()
 
     async def _later_set_result():
