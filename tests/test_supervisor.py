@@ -31,6 +31,7 @@ class _DockerClient:
 
 
 def test_supervisor_spawn_and_terminate(monkeypatch, tmp_path: Path):
+    # Supervisorがworkspaceを作成し、コンテナ起動・停止を正しく呼び出すことを検証する
     dc = _DockerClient()
     monkeypatch.setattr(mod.docker, "from_env", lambda: dc)
 
@@ -43,4 +44,3 @@ def test_supervisor_spawn_and_terminate(monkeypatch, tmp_path: Path):
 
     sp.terminate("wk-1")
     assert dc.containers._container.stopped is True
-

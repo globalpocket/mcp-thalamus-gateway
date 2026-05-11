@@ -34,6 +34,7 @@ class _Client:
 
 @pytest.mark.asyncio
 async def test_llm_bridge_infer(monkeypatch):
+    # LLMBridgeが指定URLへPOSTし、レスポンスJSONをそのまま返すことを検証する
     import gateway.llm_bridge as mod
 
     client = _Client()
@@ -46,4 +47,3 @@ async def test_llm_bridge_infer(monkeypatch):
     assert out["ok"] is True
     assert client.last_url == "http://llm/v1/chat/completions"
     assert client.last_json["model"] == "m"
-

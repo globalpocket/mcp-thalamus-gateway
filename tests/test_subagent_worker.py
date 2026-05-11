@@ -28,6 +28,7 @@ class _Nats:
 
 @pytest.mark.asyncio
 async def test_subagent_ignores_other_worker(monkeypatch):
+    # 他worker向けのtask.assignイベントを無視し、publishしないことを検証する
     w = SubagentWorker()
     w._worker_id = "wk-1"
     w._task_id = "task-1"
@@ -46,6 +47,7 @@ async def test_subagent_ignores_other_worker(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_subagent_full_flow_publish_result_and_exit(monkeypatch):
+    # 自worker向けtask.assign受信後、llm.request→task.result→agent.exitを順にpublishすることを検証する
     w = SubagentWorker()
     w._worker_id = "wk-1"
     w._task_id = "task-1"
@@ -79,6 +81,7 @@ async def test_subagent_full_flow_publish_result_and_exit(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_subagent_run_subscribes(monkeypatch):
+    # run実行時に必要な購読（task.assign/llm.response）が登録されることを検証する
     w = SubagentWorker()
     n = _Nats()
     w._nats = n
@@ -92,4 +95,3 @@ async def test_subagent_run_subscribes(monkeypatch):
 
     assert "runtime.task.assign" in n.subscriptions
     assert "runtime.llm.response" in n.subscriptions
-

@@ -48,6 +48,7 @@ class _Llm:
 
 @pytest.mark.asyncio
 async def test_gateway_start_subscriptions():
+    # Gateway起動時に必要なNATS購読（llm.request/task.result/agent.exit）が登録されることを検証する
     gw = NatsGateway(GatewayConfig())
     gw._nats = _Nats()
     await gw.start()
@@ -59,6 +60,7 @@ async def test_gateway_start_subscriptions():
 
 @pytest.mark.asyncio
 async def test_gateway_llm_request_response_publish():
+    # runtime.llm.request受信時にLLM推論を実行し、runtime.llm.responseをpublishすることを検証する
     gw = NatsGateway(GatewayConfig())
     gw._nats = _Nats()
     gw._llm = _Llm()
@@ -78,6 +80,7 @@ async def test_gateway_llm_request_response_publish():
 
 @pytest.mark.asyncio
 async def test_gateway_result_and_exit_handlers():
+    # task.resultで結果が保存され、agent.exitでSupervisor.terminateが呼ばれることを検証する
     gw = NatsGateway(GatewayConfig())
     gw._nats = _Nats()
     gw._supervisor = _Sup()
@@ -103,6 +106,7 @@ async def test_gateway_result_and_exit_handlers():
 
 @pytest.mark.asyncio
 async def test_gateway_assign_task_waits_result(monkeypatch):
+    # assign_taskがtask.assign発行後に結果到着まで待機し、workspace_path付きで返すことを検証する
     gw = NatsGateway(GatewayConfig())
     gw._nats = _Nats()
     gw._supervisor = _Sup()
@@ -117,4 +121,3 @@ async def test_gateway_assign_task_waits_result(monkeypatch):
     await t
     assert out["summary"] == "ok"
     assert out["workspace_path"].startswith("/tmp/task-")
-

@@ -2,6 +2,7 @@ from gateway.config import GatewayConfig
 
 
 def test_gateway_config_defaults(monkeypatch):
+    # 環境変数未設定時に、GatewayConfigがデフォルト値で初期化されることを検証する
     monkeypatch.delenv("NATS_URL", raising=False)
     monkeypatch.delenv("LLM_BASE_URL", raising=False)
     monkeypatch.delenv("LLM_PATH", raising=False)
@@ -15,6 +16,7 @@ def test_gateway_config_defaults(monkeypatch):
 
 
 def test_gateway_config_env(monkeypatch):
+    # 環境変数設定時に、GatewayConfigへ値が正しく反映されることを検証する
     monkeypatch.setenv("NATS_URL", "nats://example:4222")
     monkeypatch.setenv("LLM_BASE_URL", "http://llm")
     monkeypatch.setenv("LLM_PATH", "/v1/test")
@@ -29,4 +31,3 @@ def test_gateway_config_env(monkeypatch):
     assert c.llm_model == "dummy"
     assert c.workspace_root == "/tmp/ws"
     assert c.subagent_image == "img:test"
-
