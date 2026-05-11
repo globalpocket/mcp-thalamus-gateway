@@ -1,0 +1,21 @@
+services:
+  nats:
+    image: nats:2.10-alpine
+    ports:
+      - "4222:4222"
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: infra/gateway.Dockerfile
+    environment:
+      NATS_URL: nats://nats:4222
+      LLM_BASE_URL: http://host.docker.internal:11434
+      SUBAGENT_IMAGE: thalamus-subagent:dev
+      WORKSPACE_ROOT: /tmp/thalamus-workspaces
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../.workspaces:/tmp/thalamus-workspaces
+    depends_on:
+      - nats
+

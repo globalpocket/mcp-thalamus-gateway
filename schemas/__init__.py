@@ -1,0 +1,2 @@
+"""Shared Thalamus event schemas."""
+
